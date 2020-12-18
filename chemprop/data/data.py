@@ -6,6 +6,7 @@ from typing import Dict, Iterator, List, Optional, Union
 import numpy as np
 from torch.utils.data import DataLoader, Dataset, Sampler
 from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 from .scaler import StandardScaler
 from chemprop.features import get_features_generator
@@ -15,6 +16,8 @@ from chemprop.features import BatchMolGraph, MolGraph
 # Cache of graph featurizations
 CACHE_GRAPH = True
 SMILES_TO_GRAPH: Dict[str, MolGraph] = {}
+
+ENUMERATOR = rdMolStandardize.TautomerEnumerator()
 
 
 def cache_graph() -> bool:
@@ -54,7 +57,8 @@ class MoleculeDatapoint:
                  features: np.ndarray = None,
                  features_generator: List[str] = None,
                  atom_features: np.ndarray = None,
-                 atom_descriptors: np.ndarray = None):
+                 atom_descriptors: np.ndarray = None,
+                 use_tauts = False):
         """
         :param smiles: A list of the SMILES strings for the molecules.
         :param targets: A list of targets for the molecule (contains None for unknown target values).
@@ -72,6 +76,7 @@ class MoleculeDatapoint:
         self.features_generator = features_generator
         self.atom_descriptors = atom_descriptors
         self.atom_features = atom_features
+        self.use_tauts = use_tauts
 
         # Generate additional features if given a generator
         if self.features_generator is not None:
@@ -108,18 +113,24 @@ class MoleculeDatapoint:
     @property
     def mol(self) -> List[Chem.Mol]:
         """Gets the corresponding list of RDKit molecules for the corresponding SMILES list."""
-        mol = []
-        for s in self.smiles:
-            if s in SMILES_TO_MOL:
-                mol.append(SMILES_TO_MOL[s])
+        if not len(self.smiles) == 1:
+            raise NotImplementedError
+        s = self.smiles[0]
+        if s in SMILES_TO_MOL:
+            tauts = SMILES_TO_MOL[s]
+        else:
+            mol = Chem.MolFromSmiles(s)
+            if self.use_tauts:
+                tauts = [mol] + list(ENUMERATOR.Enumerate(mol))
             else:
-                mol.append(Chem.MolFromSmiles(s))
-        
-        if cache_mol():
-            for s, m in zip(self.smiles, mol):
-                SMILES_TO_MOL[s] = m
+                tauts = [mol]
 
-        return mol
+        if cache_mol():
+            SMILES_TO_MOL[s] = tauts
+
+        taut = [np.random.choice(tauts)]
+
+        return taut
 
     @property
     def number_of_molecules(self) -> int:
@@ -240,8 +251,8 @@ class MoleculeDataset(Dataset):
                                                       'per input (i.e., number_of_molecules = 1).')
 
                         mol_graph = MolGraph(m, d.atom_features)
-                        if cache_graph():
-                            SMILES_TO_GRAPH[s] = mol_graph
+                        #if cache_graph():
+                        #    SMILES_TO_GRAPH[s] = mol_graph
                     mol_graphs_list.append(mol_graph)
                 mol_graphs.append(mol_graphs_list)
 

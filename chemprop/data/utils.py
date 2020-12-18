@@ -130,6 +130,7 @@ def filter_invalid_smiles(data: MoleculeDataset) -> MoleculeDataset:
 
 
 def get_data(path: str,
+             use_tauts: bool,
              smiles_columns: Union[str, List[str]] = None,
              target_columns: List[str] = None,
              ignore_columns: List[str] = None,
@@ -250,6 +251,7 @@ def get_data(path: str,
             MoleculeDatapoint(
                 smiles=smiles,
                 targets=targets,
+                use_tauts=use_tauts,
                 row=all_rows[i] if store_row else None,
                 features_generator=features_generator,
                 features=all_features[i] if features_data is not None else None,
@@ -285,9 +287,12 @@ def get_data_from_smiles(smiles: List[List[str]],
     """
     debug = logger.debug if logger is not None else print
 
+    raise NotImplementedError
+
     data = MoleculeDataset([
         MoleculeDatapoint(
             smiles=smile,
+            use_tauts=args.use_tauts,
             row=OrderedDict({'smiles': smile}),
             features_generator=features_generator
         ) for smile in smiles

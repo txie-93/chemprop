@@ -62,6 +62,7 @@ def cross_validate(args: TrainArgs,
         args=args,
         logger=logger,
         skip_none_targets=True,
+        use_tauts=args.use_tauts,
     )
     validate_dataset_type(data, dataset_type=args.dataset_type)
     args.features_size = data.features_size()

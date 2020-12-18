@@ -50,7 +50,7 @@ def make_predictions(args: PredictArgs, smiles: List[List[str]] = None) -> List[
         )
     else:
         full_data = get_data(path=args.test_path, target_columns=[], ignore_columns=[], skip_invalid_smiles=False,
-                             args=args, store_row=True)
+                             args=args, store_row=True, use_tauts=args.use_tauts)
 
     print('Validating SMILES')
     full_to_valid_indices = {}

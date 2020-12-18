@@ -67,6 +67,8 @@ class CommonArgs(Tap):
     number_of_molecules: int = 1
     """Number of molecules in each input to the model.
     This must equal the length of :code:`smiles_column` (if not :code:`None`)."""
+    use_tauts: bool = False
+    """Whether to use tauts to argumnet data (default: false)."""
     checkpoint_dir: str = None
     """Directory from which to load model checkpoints (walks directory and ensembles all models that are found)."""
     checkpoint_path: str = None
